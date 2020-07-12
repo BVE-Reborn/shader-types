@@ -1,0 +1,17 @@
+[package]
+name = "shader-types"
+version = "0.1.0"
+authors = ["Connor Fitzgerald <connorwadefitzgerald@gmail.com>"]
+edition = "2018"
+description = "Wrappers for Vector and Matrix types to properly align them for std140 uniform blocks"
+readme = "README.md"
+repository = "https://github.com/cwfitzgerald/shader-types"
+license = "MIT OR Apache-2.0 OR Zlib"
+keywords = ["gamedev", "shaders", "graphics", "alignment", "std140"]
+categories = ["graphics", "game-development"]
+
+[dependencies]
+bytemuck = { version = "1", optional = true }
+mint = { version = "0.5", optional = true }
+zerocopy = { version = "0.3.0", optional = true }
+
