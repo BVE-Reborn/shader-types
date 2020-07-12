@@ -1,7 +1,206 @@
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {
-        assert_eq!(2 + 2, 4);
+macro_rules! define_vector {
+    ($name:ident, $align:literal, $ty:ty, $count:literal, $padding:literal <- $doc:literal) => {
+        #[doc = $doc]
+        #[repr(C, align($align))]
+        #[derive(Debug, Copy, Clone, Default, PartialEq, PartialOrd)]
+        #[cfg_attr(feature = "zerocopy", derive(zerocopy::AsBytes, zerocopy::FromBytes))]
+        pub struct $name {
+            pub inner: [$ty; $count],
+            _padding: [u8; $padding],
+        }
+
+        #[cfg(feature = "bytemuck")]
+        unsafe impl bytemuck::Zeroable for $name {}
+        #[cfg(feature = "bytemuck")]
+        unsafe impl bytemuck::Pod for $name {}
+
+        impl $name {
+            #[inline(always)]
+            pub fn new(inner: [$ty; $count]) -> Self {
+                Self {
+                    inner,
+                    _padding: [0; $padding],
+                }
+            }
+        }
+
+        impl From<[$ty; $count]> for $name {
+            #[inline(always)]
+            fn from(inner: [$ty; $count]) -> Self {
+                Self {
+                    inner,
+                    _padding: [0; $padding],
+                }
+            }
+        }
+
+        impl From<$name> for [$ty; $count] {
+            #[inline(always)]
+            fn from(other: $name) -> Self {
+                other.inner
+            }
+        }
+    };
+}
+
+define_vector!(Vec2, 8, f32, 2, 0 <- "Vector of 2 f32s. Alignment 8, size 16.");
+define_vector!(Vec3, 16, f32, 3, 4 <- "Vector of 3 f32s. Alignment 16, size 32.");
+define_vector!(Vec4, 16, f32, 4, 0 <- "Vector of 4 f32s. Alignment 16, size 32.");
+define_vector!(DVec2, 16, f64, 2, 0 <- "Vector of 2 f64s. Alignment 16, size 32.");
+define_vector!(DVec3, 32, f64, 3, 8 <- "Vector of 3 f64s. Alignment 32, size 64.");
+define_vector!(DVec4, 32, f64, 4, 0 <- "Vector of 4 f64s. Alignment 32, size 64.");
+define_vector!(UVec2, 8, u32, 2, 0 <- "Vector of 2 u32s. Alignment 8, size 16.");
+define_vector!(UVec3, 16, u32, 3, 4 <- "Vector of 3 u32s. Alignment 16, size 32.");
+define_vector!(UVec4, 16, u32, 4, 0 <- "Vector of 4 u32s. Alignment 16, size 32.");
+define_vector!(IVec2, 8, i32, 2, 0 <- "Vector of 2 i32s. Alignment 8, size 16.");
+define_vector!(IVec3, 16, i32, 3, 4 <- "Vector of 3 i32s. Alignment 16, size 32.");
+define_vector!(IVec4, 16, i32, 4, 0 <- "Vector of 4 i32s. Alignment 16, size 32.");
+
+macro_rules! define_matrix {
+    ($name:ident, $align:literal, $inner_ty:ty, $ty:ty, $count_x:literal, $count_y:literal -> $($idx:literal),* <- $doc:literal) => {
+        #[doc = $doc]
+        #[repr(C, align($align))]
+        #[derive(Debug, Copy, Clone, Default, PartialEq, PartialOrd)]
+        #[cfg_attr(feature = "zerocopy", derive(zerocopy::AsBytes, zerocopy::FromBytes))]
+        pub struct $name {
+            pub inner: [$ty; $count_y],
+        }
+
+        #[cfg(feature = "bytemuck")]
+        unsafe impl bytemuck::Zeroable for $name {}
+        #[cfg(feature = "bytemuck")]
+        unsafe impl bytemuck::Pod for $name {}
+
+        impl $name {
+            #[inline(always)]
+            pub fn new(inner: [$ty; $count_y]) -> Self {
+                Self { inner }
+            }
+        }
+
+        impl From<[$ty; $count_y]> for $name {
+            #[inline(always)]
+            fn from(inner: [$ty; $count_y]) -> Self {
+                Self { inner }
+            }
+        }
+
+        impl From<[$inner_ty; $count_x * $count_y]> for $name {
+            #[inline(always)]
+            fn from(inner: [$inner_ty; $count_x * $count_y]) -> Self {
+                let d2: [[$inner_ty; $count_x]; $count_y] = unsafe { std::mem::transmute(inner) };
+                Self {
+                    inner: [$(<$ty>::from(d2[$idx])),*],
+                }
+            }
+        }
+
+        impl From<[[$inner_ty; $count_x]; $count_y]> for $name {
+            #[inline(always)]
+            fn from(inner: [[$inner_ty; $count_x]; $count_y]) -> Self {
+                Self {
+                    inner: [$(<$ty>::from(inner[$idx])),*],
+                }
+            }
+        }
+
+        impl From<$name> for [$ty; $count_y] {
+            #[inline(always)]
+            fn from(other: $name) -> Self {
+                other.inner
+            }
+        }
+
+        impl From<$name> for [$inner_ty; $count_x * $count_y] {
+            #[inline(always)]
+            fn from(other: $name) -> Self {
+                let d2: [[$inner_ty; $count_x]; $count_y] = [$(<[$inner_ty; $count_x]>::from(other.inner[$idx])),*];
+                unsafe { std::mem::transmute(d2) }
+            }
+        }
+
+        impl From<$name> for [[$inner_ty; $count_x]; $count_y] {
+            #[inline(always)]
+            fn from(other: $name) -> Self {
+                [$(<[$inner_ty; $count_x]>::from(other.inner[$idx])),*]
+            }
+        }
+    };
+}
+
+define_matrix!(Mat2x2, 8, f32, Vec2, 2, 2 -> 0, 1 <- "Matrix of f32s with 2 columns and 2 rows. Alignment 8, size 16.");
+define_matrix!(Mat2x3, 8, f32, Vec2, 2, 3 -> 0, 1, 2 <- "Matrix of f32s with 2 columns and 3 rows. Alignment 8, size 24.");
+define_matrix!(Mat2x4, 8, f32, Vec2, 2, 4 -> 0, 1, 2, 3 <- "Matrix of f32s with 2 columns and 4 rows. Alignment 8, size 32.");
+
+define_matrix!(Mat3x2, 16, f32, Vec3, 3, 2 -> 0, 1 <- "Matrix of f32s with 3 columns and 2 rows. Alignment 16, size 32.");
+define_matrix!(Mat3x3, 16, f32, Vec3, 3, 3 -> 0, 1, 2 <- "Matrix of f32s with 3 columns and 3 rows. Alignment 16, size 48.");
+define_matrix!(Mat3x4, 16, f32, Vec3, 3, 4 -> 0, 1, 2, 3 <- "Matrix of f32s with 3 columns and 4 rows. Alignment 16, size 64.");
+
+define_matrix!(Mat4x2, 16, f32, Vec4, 4, 2 -> 0, 1 <- "Matrix of f32s with 4 columns and 2 rows. Alignment 16, size 32.");
+define_matrix!(Mat4x3, 16, f32, Vec4, 4, 3 -> 0, 1, 2 <- "Matrix of f32s with 4 columns and 3 rows. Alignment 16, size 48.");
+define_matrix!(Mat4x4, 16, f32, Vec4, 4, 4 -> 0, 1, 2, 3 <- "Matrix of f32s with 4 columns and 4 rows. Alignment 16, size 64.");
+
+/// Matrix of f32s with 2 columns and 2 rows. Alignment 8, size 16.
+pub type Mat2 = Mat2x2;
+/// Matrix of f32s with 3 columns and 3 rows. Alignment 16, size 48.
+pub type Mat3 = Mat3x3;
+/// Matrix of f32s with 4 columns and 4 rows. Alignment 16, size 64.
+pub type Mat4 = Mat4x4;
+
+define_matrix!(DMat2x2, 16, f64, DVec2, 2, 2 -> 0, 1 <- "Matrix of f64s with 2 columns and 2 rows. Alignment 16, size 32.");
+define_matrix!(DMat2x3, 16, f64, DVec2, 2, 3 -> 0, 1, 2 <- "Matrix of f64s with 2 columns and 3 rows. Alignment 16, size 48.");
+define_matrix!(DMat2x4, 16, f64, DVec2, 2, 4 -> 0, 1, 2, 3 <- "Matrix of f64s with 2 columns and 4 rows. Alignment 16, size 64.");
+
+define_matrix!(DMat3x2, 32, f64, DVec3, 3, 2 -> 0, 1 <- "Matrix of f64s with 3 columns and 2 rows. Alignment 32, size 64.");
+define_matrix!(DMat3x3, 32, f64, DVec3, 3, 3 -> 0, 1, 2 <- "Matrix of f64s with 3 columns and 3 rows. Alignment 32, size 96.");
+define_matrix!(DMat3x4, 32, f64, DVec3, 3, 4 -> 0, 1, 2, 3 <- "Matrix of f64s with 3 columns and 4 rows. Alignment 32, size 128.");
+
+define_matrix!(DMat4x2, 32, f64, DVec4, 4, 2 -> 0, 1 <- "Matrix of f64s with 4 columns and 2 rows. Alignment 32, size 64.");
+define_matrix!(DMat4x3, 32, f64, DVec4, 4, 3 -> 0, 1, 2 <- "Matrix of f64s with 4 columns and 3 rows. Alignment 32, size 96.");
+define_matrix!(DMat4x4, 32, f64, DVec4, 4, 4 -> 0, 1, 2, 3 <- "Matrix of f64s with 4 columns and 4 rows. Alignment 32, size 128.");
+
+/// Matrix of f64s with 2 columns and 3 rows. Alignment 16, size 48.
+pub type DMat2 = DMat2x2;
+/// Matrix of f64s with 3 columns and 3 rows. Alignment 32, size 96.
+pub type DMat3 = DMat3x3;
+/// Matrix of f64s with 4 columns and 4 rows. Alignment 32, size 128.
+pub type DMat4 = DMat4x4;
+
+/// Correctly sized padding helpers.
+pub mod padding {
+    macro_rules! define_padding {
+        ($name:ident, $count:literal <- $doc:literal) => {
+            #[doc = $doc]
+            #[repr(C)]
+            #[derive(Debug, Copy, Clone, Default, PartialEq, PartialOrd)]
+            #[cfg_attr(
+                feature = "zerocopy",
+                derive(zerocopy::AsBytes, zerocopy::FromBytes, zerocopy::Unaligned)
+            )]
+            pub struct $name {
+                _padding: [u8; $count],
+            }
+
+            #[cfg(feature = "bytemuck")]
+            unsafe impl bytemuck::Zeroable for $name {}
+            #[cfg(feature = "bytemuck")]
+            unsafe impl bytemuck::Pod for $name {}
+
+            impl $name {
+                #[inline(always)]
+                pub fn new() -> Self {
+                    Self::default()
+                }
+            }
+        };
     }
+
+    define_padding!(Pad1Float, 4 <- "Padding the size of a single float/uint/int.");
+    define_padding!(Pad2Float, 8 <- "Padding the size of two floats/uints/ints.");
+    define_padding!(Pad3Float, 12 <- "Padding the size of three floats/uints/ints.");
+    define_padding!(Pad4Float, 16 <- "Padding the size of four floats/uints/ints.");
+    define_padding!(Pad1Double, 8 <- "Padding the size of a single double.");
+    define_padding!(Pad2Double, 16 <- "Padding the size of two doubles.");
+    define_padding!(Pad3Double, 24 <- "Padding the size of three doubles.");
+    define_padding!(Pad4Double, 32 <- "Padding the size of four doubles.");
 }
