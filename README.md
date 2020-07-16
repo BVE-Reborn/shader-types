@@ -32,15 +32,13 @@ use shader_types::{Vec2, Vec3, Mat4};
 use shader_types::padding::Pad2Float;
 
 // Definition
-#[repr(C)]
+#[repr(C, align(16))] // All structures are Align(16)
 #[derive(Copy, Clone)]
-// #[derive(zerocopy::AsBytes)] // Supports zerocopy with the `zerocopy` feature
 struct UniformBlock {
     mvp: Mat4, // 16 align + 64 size
-    position: Vec3, // 16 align + 16 size
-    normal: Vec3, // 16 align + 16 size
+    position: Vec3, // 16 align + 12 size
+    normal: Vec3, // 16 align + 12 size
     uv: Vec2, // 8 align + 8 size
-    _padding: Pad2Float, // Struct is 16 byte aligned, so we need (the space of) 2 more floats.
 }
 
 fn generate_mvp() -> [f32; 16] {
@@ -54,12 +52,10 @@ let block = UniformBlock {
     position: Vec3::new([0.0, 1.0, 2.0]), // `from` also works
     normal: Vec3::new([-2.0, 2.0, 3.0]),
     uv: Vec2::new([0.0, 1.0]),
-    _padding: Pad2Float::new(), // `default` also works
 };
 
 // Supports bytemuck with the `bytemuck` feature
 unsafe impl bytemuck::Zeroable for UniformBlock {}
-// Safe to implement as there is no implicit padding
 unsafe impl bytemuck::Pod for UniformBlock {}
 
 let block_u8: &[u8] = bytemuck::cast_slice(&[block]);

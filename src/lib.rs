@@ -32,12 +32,10 @@
 //! // Definition
 //! #[repr(C)]
 //! #[derive(Copy, Clone)]
-//! // #[derive(zerocopy::AsBytes)] // Supports zerocopy with the `zerocopy` feature
-//! # #[cfg_attr(feature = "zerocopy", derive(zerocopy::AsBytes))]
 //! struct UniformBlock {
 //!     mvp: Mat4, // 16 align + 64 size
-//!     position: Vec3, // 16 align + 16 size
-//!     normal: Vec3, // 16 align + 16 size
+//!     position: Vec3, // 16 align + 12 size
+//!     normal: Vec3, // 16 align + 12 size
 //!     uv: Vec2, // 8 align + 8 size
 //!     _padding: Pad2Float, // Struct is 16 byte aligned, so we need (the space of) 2 more floats.
 //! }
@@ -59,21 +57,18 @@
 //!
 //! // Supports bytemuck with the `bytemuck` feature
 //! unsafe impl bytemuck::Zeroable for UniformBlock {}
-//! // Safe to implement as there is no implicit padding
 //! unsafe impl bytemuck::Pod for UniformBlock {}
 //!
 //! let block_u8: &[u8] = bytemuck::cast_slice(&[block]);
 //! ```
 
 macro_rules! define_vector {
-    ($name:ident, $align:literal, $ty:ty, $count:literal, $padding:literal <- $doc:literal) => {
+    ($name:ident, $align:literal, $ty:ty, $count:literal<- $doc:literal) => {
         #[doc = $doc]
         #[repr(C, align($align))]
         #[derive(Debug, Copy, Clone, Default, PartialEq, PartialOrd)]
-        #[cfg_attr(feature = "zerocopy", derive(zerocopy::AsBytes, zerocopy::FromBytes))]
         pub struct $name {
             pub inner: [$ty; $count],
-            _padding: [u8; $padding],
         }
 
         #[cfg(feature = "bytemuck")]
@@ -86,7 +81,6 @@ macro_rules! define_vector {
             pub fn new(inner: [$ty; $count]) -> Self {
                 Self {
                     inner,
-                    _padding: [0; $padding],
                 }
             }
         }
@@ -96,7 +90,6 @@ macro_rules! define_vector {
             fn from(inner: [$ty; $count]) -> Self {
                 Self {
                     inner,
-                    _padding: [0; $padding],
                 }
             }
         }
@@ -110,27 +103,27 @@ macro_rules! define_vector {
     };
 }
 
-define_vector!(Vec2, 8, f32, 2, 0 <- "Vector of 2 f32s. Alignment 8, size 16.");
-define_vector!(Vec3, 16, f32, 3, 4 <- "Vector of 3 f32s. Alignment 16, size 32.");
-define_vector!(Vec4, 16, f32, 4, 0 <- "Vector of 4 f32s. Alignment 16, size 32.");
-define_vector!(DVec2, 16, f64, 2, 0 <- "Vector of 2 f64s. Alignment 16, size 32.");
-define_vector!(DVec3, 32, f64, 3, 8 <- "Vector of 3 f64s. Alignment 32, size 64.");
-define_vector!(DVec4, 32, f64, 4, 0 <- "Vector of 4 f64s. Alignment 32, size 64.");
-define_vector!(UVec2, 8, u32, 2, 0 <- "Vector of 2 u32s. Alignment 8, size 16.");
-define_vector!(UVec3, 16, u32, 3, 4 <- "Vector of 3 u32s. Alignment 16, size 32.");
-define_vector!(UVec4, 16, u32, 4, 0 <- "Vector of 4 u32s. Alignment 16, size 32.");
-define_vector!(IVec2, 8, i32, 2, 0 <- "Vector of 2 i32s. Alignment 8, size 16.");
-define_vector!(IVec3, 16, i32, 3, 4 <- "Vector of 3 i32s. Alignment 16, size 32.");
-define_vector!(IVec4, 16, i32, 4, 0 <- "Vector of 4 i32s. Alignment 16, size 32.");
+define_vector!(Vec2, 8, f32, 2 <- "Vector of 2 f32s. Alignment 8, size 16.");
+define_vector!(Vec3, 16, f32, 3 <- "Vector of 3 f32s. Alignment 16, size 24.");
+define_vector!(Vec4, 16, f32, 4 <- "Vector of 4 f32s. Alignment 16, size 32.");
+define_vector!(DVec2, 16, f64, 2 <- "Vector of 2 f64s. Alignment 16, size 32.");
+define_vector!(DVec3, 32, f64, 3 <- "Vector of 3 f64s. Alignment 32, size 48.");
+define_vector!(DVec4, 32, f64, 4 <- "Vector of 4 f64s. Alignment 32, size 64.");
+define_vector!(UVec2, 8, u32, 2 <- "Vector of 2 u32s. Alignment 8, size 16.");
+define_vector!(UVec3, 16, u32, 3 <- "Vector of 3 u32s. Alignment 16, size 24.");
+define_vector!(UVec4, 16, u32, 4 <- "Vector of 4 u32s. Alignment 16, size 32.");
+define_vector!(IVec2, 8, i32, 2 <- "Vector of 2 i32s. Alignment 8, size 16.");
+define_vector!(IVec3, 16, i32, 3 <- "Vector of 3 i32s. Alignment 16, size 24.");
+define_vector!(IVec4, 16, i32, 4 <- "Vector of 4 i32s. Alignment 16, size 32.");
 
 macro_rules! define_matrix {
-    ($name:ident, $align:literal, $inner_ty:ty, $ty:ty, $count_x:literal, $count_y:literal -> $($idx:literal),* <- $doc:literal) => {
+    ($name:ident, $align:literal, $inner_ty:ty, $ty:ty, $count_x:literal, $count_y:literal, $padding:literal -> $($idx:literal),* <- $doc:literal) => {
         #[doc = $doc]
         #[repr(C, align($align))]
         #[derive(Debug, Copy, Clone, Default, PartialEq, PartialOrd)]
-        #[cfg_attr(feature = "zerocopy", derive(zerocopy::AsBytes, zerocopy::FromBytes))]
         pub struct $name {
             pub inner: [$ty; $count_y],
+            _padding: [u8; $padding],
         }
 
         #[cfg(feature = "bytemuck")]
@@ -141,14 +134,14 @@ macro_rules! define_matrix {
         impl $name {
             #[inline(always)]
             pub fn new(inner: [$ty; $count_y]) -> Self {
-                Self { inner }
+                Self { inner, _padding: [0; $padding] }
             }
         }
 
         impl From<[$ty; $count_y]> for $name {
             #[inline(always)]
             fn from(inner: [$ty; $count_y]) -> Self {
-                Self { inner }
+                Self { inner, _padding: [0; $padding]  }
             }
         }
 
@@ -158,6 +151,7 @@ macro_rules! define_matrix {
                 let d2: [[$inner_ty; $count_x]; $count_y] = unsafe { std::mem::transmute(inner) };
                 Self {
                     inner: [$(<$ty>::from(d2[$idx])),*],
+                    _padding: [0; $padding],
                 }
             }
         }
@@ -167,6 +161,7 @@ macro_rules! define_matrix {
             fn from(inner: [[$inner_ty; $count_x]; $count_y]) -> Self {
                 Self {
                     inner: [$(<$ty>::from(inner[$idx])),*],
+                    _padding: [0; $padding],
                 }
             }
         }
@@ -195,17 +190,17 @@ macro_rules! define_matrix {
     };
 }
 
-define_matrix!(Mat2x2, 8, f32, Vec2, 2, 2 -> 0, 1 <- "Matrix of f32s with 2 columns and 2 rows. Alignment 8, size 16.");
-define_matrix!(Mat2x3, 8, f32, Vec2, 2, 3 -> 0, 1, 2 <- "Matrix of f32s with 2 columns and 3 rows. Alignment 8, size 24.");
-define_matrix!(Mat2x4, 8, f32, Vec2, 2, 4 -> 0, 1, 2, 3 <- "Matrix of f32s with 2 columns and 4 rows. Alignment 8, size 32.");
+define_matrix!(Mat2x2, 8, f32, Vec2, 2, 2, 0 -> 0, 1 <- "Matrix of f32s with 2 columns and 2 rows. Alignment 8, size 16.");
+define_matrix!(Mat2x3, 8, f32, Vec2, 2, 3, 8 -> 0, 1, 2 <- "Matrix of f32s with 2 columns and 3 rows. Alignment 8, size 32.");
+define_matrix!(Mat2x4, 8, f32, Vec2, 2, 4, 0 -> 0, 1, 2, 3 <- "Matrix of f32s with 2 columns and 4 rows. Alignment 8, size 32.");
 
-define_matrix!(Mat3x2, 16, f32, Vec3, 3, 2 -> 0, 1 <- "Matrix of f32s with 3 columns and 2 rows. Alignment 16, size 32.");
-define_matrix!(Mat3x3, 16, f32, Vec3, 3, 3 -> 0, 1, 2 <- "Matrix of f32s with 3 columns and 3 rows. Alignment 16, size 48.");
-define_matrix!(Mat3x4, 16, f32, Vec3, 3, 4 -> 0, 1, 2, 3 <- "Matrix of f32s with 3 columns and 4 rows. Alignment 16, size 64.");
+define_matrix!(Mat3x2, 16, f32, Vec3, 3, 2, 4 -> 0, 1 <- "Matrix of f32s with 3 columns and 2 rows. Alignment 16, size 32.");
+define_matrix!(Mat3x3, 16, f32, Vec3, 3, 3, 4 -> 0, 1, 2 <- "Matrix of f32s with 3 columns and 3 rows. Alignment 16, size 48.");
+define_matrix!(Mat3x4, 16, f32, Vec3, 3, 4, 4 -> 0, 1, 2, 3 <- "Matrix of f32s with 3 columns and 4 rows. Alignment 16, size 64.");
 
-define_matrix!(Mat4x2, 16, f32, Vec4, 4, 2 -> 0, 1 <- "Matrix of f32s with 4 columns and 2 rows. Alignment 16, size 32.");
-define_matrix!(Mat4x3, 16, f32, Vec4, 4, 3 -> 0, 1, 2 <- "Matrix of f32s with 4 columns and 3 rows. Alignment 16, size 48.");
-define_matrix!(Mat4x4, 16, f32, Vec4, 4, 4 -> 0, 1, 2, 3 <- "Matrix of f32s with 4 columns and 4 rows. Alignment 16, size 64.");
+define_matrix!(Mat4x2, 16, f32, Vec4, 4, 2, 0 -> 0, 1 <- "Matrix of f32s with 4 columns and 2 rows. Alignment 16, size 32.");
+define_matrix!(Mat4x3, 16, f32, Vec4, 4, 3, 0 -> 0, 1, 2 <- "Matrix of f32s with 4 columns and 3 rows. Alignment 16, size 48.");
+define_matrix!(Mat4x4, 16, f32, Vec4, 4, 4, 0 -> 0, 1, 2, 3 <- "Matrix of f32s with 4 columns and 4 rows. Alignment 16, size 64.");
 
 /// Matrix of f32s with 2 columns and 2 rows. Alignment 8, size 16.
 pub type Mat2 = Mat2x2;
@@ -214,17 +209,17 @@ pub type Mat3 = Mat3x3;
 /// Matrix of f32s with 4 columns and 4 rows. Alignment 16, size 64.
 pub type Mat4 = Mat4x4;
 
-define_matrix!(DMat2x2, 16, f64, DVec2, 2, 2 -> 0, 1 <- "Matrix of f64s with 2 columns and 2 rows. Alignment 16, size 32.");
-define_matrix!(DMat2x3, 16, f64, DVec2, 2, 3 -> 0, 1, 2 <- "Matrix of f64s with 2 columns and 3 rows. Alignment 16, size 48.");
-define_matrix!(DMat2x4, 16, f64, DVec2, 2, 4 -> 0, 1, 2, 3 <- "Matrix of f64s with 2 columns and 4 rows. Alignment 16, size 64.");
+define_matrix!(DMat2x2, 16, f64, DVec2, 2, 2, 0 -> 0, 1 <- "Matrix of f64s with 2 columns and 2 rows. Alignment 16, size 32.");
+define_matrix!(DMat2x3, 16, f64, DVec2, 2, 3, 0 -> 0, 1, 2 <- "Matrix of f64s with 2 columns and 3 rows. Alignment 16, size 48.");
+define_matrix!(DMat2x4, 16, f64, DVec2, 2, 4, 0 -> 0, 1, 2, 3 <- "Matrix of f64s with 2 columns and 4 rows. Alignment 16, size 64.");
 
-define_matrix!(DMat3x2, 32, f64, DVec3, 3, 2 -> 0, 1 <- "Matrix of f64s with 3 columns and 2 rows. Alignment 32, size 64.");
-define_matrix!(DMat3x3, 32, f64, DVec3, 3, 3 -> 0, 1, 2 <- "Matrix of f64s with 3 columns and 3 rows. Alignment 32, size 96.");
-define_matrix!(DMat3x4, 32, f64, DVec3, 3, 4 -> 0, 1, 2, 3 <- "Matrix of f64s with 3 columns and 4 rows. Alignment 32, size 128.");
+define_matrix!(DMat3x2, 32, f64, DVec3, 3, 2, 0 -> 0, 1 <- "Matrix of f64s with 3 columns and 2 rows. Alignment 32, size 64.");
+define_matrix!(DMat3x3, 32, f64, DVec3, 3, 3, 0 -> 0, 1, 2 <- "Matrix of f64s with 3 columns and 3 rows. Alignment 32, size 96.");
+define_matrix!(DMat3x4, 32, f64, DVec3, 3, 4, 0 -> 0, 1, 2, 3 <- "Matrix of f64s with 3 columns and 4 rows. Alignment 32, size 128.");
 
-define_matrix!(DMat4x2, 32, f64, DVec4, 4, 2 -> 0, 1 <- "Matrix of f64s with 4 columns and 2 rows. Alignment 32, size 64.");
-define_matrix!(DMat4x3, 32, f64, DVec4, 4, 3 -> 0, 1, 2 <- "Matrix of f64s with 4 columns and 3 rows. Alignment 32, size 96.");
-define_matrix!(DMat4x4, 32, f64, DVec4, 4, 4 -> 0, 1, 2, 3 <- "Matrix of f64s with 4 columns and 4 rows. Alignment 32, size 128.");
+define_matrix!(DMat4x2, 32, f64, DVec4, 4, 2, 0 -> 0, 1 <- "Matrix of f64s with 4 columns and 2 rows. Alignment 32, size 64.");
+define_matrix!(DMat4x3, 32, f64, DVec4, 4, 3, 0 -> 0, 1, 2 <- "Matrix of f64s with 4 columns and 3 rows. Alignment 32, size 96.");
+define_matrix!(DMat4x4, 32, f64, DVec4, 4, 4, 0 -> 0, 1, 2, 3 <- "Matrix of f64s with 4 columns and 4 rows. Alignment 32, size 128.");
 
 /// Matrix of f64s with 2 columns and 3 rows. Alignment 16, size 48.
 pub type DMat2 = DMat2x2;
@@ -240,10 +235,6 @@ pub mod padding {
             #[doc = $doc]
             #[repr(C)]
             #[derive(Debug, Copy, Clone, Default, PartialEq, PartialOrd)]
-            #[cfg_attr(
-                feature = "zerocopy",
-                derive(zerocopy::AsBytes, zerocopy::FromBytes, zerocopy::Unaligned)
-            )]
             pub struct $name {
                 _padding: [u8; $count],
             }
