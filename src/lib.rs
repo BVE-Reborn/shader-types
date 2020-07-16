@@ -62,6 +62,8 @@
 //! let block_u8: &[u8] = bytemuck::cast_slice(&[block]);
 //! ```
 
+#![cfg_attr(not(feature = "std"), no_std)]
+
 macro_rules! define_vector {
     ($name:ident, $align:literal, $ty:ty, $count:literal<- $doc:literal) => {
         #[doc = $doc]
@@ -148,7 +150,7 @@ macro_rules! define_matrix {
         impl From<[$inner_ty; $count_x * $count_y]> for $name {
             #[inline(always)]
             fn from(inner: [$inner_ty; $count_x * $count_y]) -> Self {
-                let d2: [[$inner_ty; $count_x]; $count_y] = unsafe { std::mem::transmute(inner) };
+                let d2: [[$inner_ty; $count_x]; $count_y] = unsafe { core::mem::transmute(inner) };
                 Self {
                     inner: [$(<$ty>::from(d2[$idx])),*],
                     _padding: [0; $padding],
@@ -177,7 +179,7 @@ macro_rules! define_matrix {
             #[inline(always)]
             fn from(other: $name) -> Self {
                 let d2: [[$inner_ty; $count_x]; $count_y] = [$(<[$inner_ty; $count_x]>::from(other.inner[$idx])),*];
-                unsafe { std::mem::transmute(d2) }
+                unsafe { core::mem::transmute(d2) }
             }
         }
 

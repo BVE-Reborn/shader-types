@@ -10,6 +10,10 @@ license = "MIT OR Apache-2.0 OR Zlib"
 keywords = ["gamedev", "shaders", "graphics", "alignment", "std140"]
 categories = ["graphics", "game-development"]
 
+[features]
+default = ["std"]
+std = []
+
 [dependencies]
 bytemuck = { version = "1", optional = true }
 
