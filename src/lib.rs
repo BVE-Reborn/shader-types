@@ -65,7 +65,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 macro_rules! define_vector {
-    ($name:ident, $align:literal, $ty:ty, $count:literal<- $doc:literal) => {
+    ($name:ident, $mint_type:ident, $align:literal, $ty:ty, $count:literal<- $doc:literal) => {
         #[doc = $doc]
         #[repr(C, align($align))]
         #[derive(Debug, Copy, Clone, Default, PartialEq, PartialOrd)]
@@ -87,12 +87,31 @@ macro_rules! define_vector {
             }
         }
 
+        #[cfg(feature = "mint")]
+        impl From<mint::$mint_type<$ty>> for $name {
+            #[inline(always)]
+            fn from(other: mint::$mint_type<$ty>) -> Self {
+                // Mint's types do not implement From for arrays, only Into.
+                let inner: [$ty; $count] = other.into();
+
+                Self { inner }
+            }
+        }
+
         impl From<[$ty; $count]> for $name {
             #[inline(always)]
             fn from(inner: [$ty; $count]) -> Self {
                 Self {
                     inner,
                 }
+            }
+        }
+
+        #[cfg(feature = "mint")]
+        impl From<$name> for mint::$mint_type<$ty> {
+            #[inline(always)]
+            fn from(other: $name) -> Self {
+                other.inner.into()
             }
         }
 
@@ -105,21 +124,21 @@ macro_rules! define_vector {
     };
 }
 
-define_vector!(Vec2, 8, f32, 2 <- "Vector of 2 f32s. Alignment 8, size 16.");
-define_vector!(Vec3, 16, f32, 3 <- "Vector of 3 f32s. Alignment 16, size 24.");
-define_vector!(Vec4, 16, f32, 4 <- "Vector of 4 f32s. Alignment 16, size 32.");
-define_vector!(DVec2, 16, f64, 2 <- "Vector of 2 f64s. Alignment 16, size 32.");
-define_vector!(DVec3, 32, f64, 3 <- "Vector of 3 f64s. Alignment 32, size 48.");
-define_vector!(DVec4, 32, f64, 4 <- "Vector of 4 f64s. Alignment 32, size 64.");
-define_vector!(UVec2, 8, u32, 2 <- "Vector of 2 u32s. Alignment 8, size 16.");
-define_vector!(UVec3, 16, u32, 3 <- "Vector of 3 u32s. Alignment 16, size 24.");
-define_vector!(UVec4, 16, u32, 4 <- "Vector of 4 u32s. Alignment 16, size 32.");
-define_vector!(IVec2, 8, i32, 2 <- "Vector of 2 i32s. Alignment 8, size 16.");
-define_vector!(IVec3, 16, i32, 3 <- "Vector of 3 i32s. Alignment 16, size 24.");
-define_vector!(IVec4, 16, i32, 4 <- "Vector of 4 i32s. Alignment 16, size 32.");
+define_vector!(Vec2, Vector2, 8, f32, 2 <- "Vector of 2 f32s. Alignment 8, size 16.");
+define_vector!(Vec3, Vector3, 16, f32, 3 <- "Vector of 3 f32s. Alignment 16, size 24.");
+define_vector!(Vec4, Vector4, 16, f32, 4 <- "Vector of 4 f32s. Alignment 16, size 32.");
+define_vector!(DVec2, Vector2, 16, f64, 2 <- "Vector of 2 f64s. Alignment 16, size 32.");
+define_vector!(DVec3, Vector3, 32, f64, 3 <- "Vector of 3 f64s. Alignment 32, size 48.");
+define_vector!(DVec4, Vector4, 32, f64, 4 <- "Vector of 4 f64s. Alignment 32, size 64.");
+define_vector!(UVec2, Vector2, 8, u32, 2 <- "Vector of 2 u32s. Alignment 8, size 16.");
+define_vector!(UVec3, Vector3, 16, u32, 3 <- "Vector of 3 u32s. Alignment 16, size 24.");
+define_vector!(UVec4, Vector4, 16, u32, 4 <- "Vector of 4 u32s. Alignment 16, size 32.");
+define_vector!(IVec2, Vector2, 8, i32, 2 <- "Vector of 2 i32s. Alignment 8, size 16.");
+define_vector!(IVec3, Vector3, 16, i32, 3 <- "Vector of 3 i32s. Alignment 16, size 24.");
+define_vector!(IVec4, Vector4, 16, i32, 4 <- "Vector of 4 i32s. Alignment 16, size 32.");
 
 macro_rules! define_matrix {
-    ($name:ident, $align:literal, $inner_ty:ty, $ty:ty, $count_x:literal, $count_y:literal, $padding:literal -> $($idx:literal),* <- $doc:literal) => {
+    ($name:ident, $mint_type:ident, $align:literal, $inner_ty:ty, $ty:ty, $count_x:literal, $count_y:literal, $padding:literal -> $($idx:literal),* <- $doc:literal) => {
         #[doc = $doc]
         #[repr(C, align($align))]
         #[derive(Debug, Copy, Clone, Default, PartialEq, PartialOrd)]
@@ -137,6 +156,16 @@ macro_rules! define_matrix {
             #[inline(always)]
             pub fn new(inner: [$ty; $count_y]) -> Self {
                 Self { inner, _padding: [0; $padding] }
+            }
+        }
+
+        #[cfg(feature = "mint")]
+        impl From<mint::$mint_type<$inner_ty>> for $name {
+            #[inline(always)]
+            fn from(other: mint::$mint_type<$inner_ty>) -> Self {
+                // Mint's types do not implement From for arrays, only Into.
+                let as_arr: [$inner_ty; $count_x * $count_y] = other.into();
+                as_arr.into()
             }
         }
 
@@ -168,6 +197,15 @@ macro_rules! define_matrix {
             }
         }
 
+        #[cfg(feature = "mint")]
+        impl From<$name> for mint::$mint_type<$inner_ty> {
+            #[inline(always)]
+            fn from(other: $name) -> Self {
+                let as_arr = <[[$inner_ty; $count_x]; $count_y]>::from(other);
+                as_arr.into()
+            }
+        }
+
         impl From<$name> for [$ty; $count_y] {
             #[inline(always)]
             fn from(other: $name) -> Self {
@@ -192,17 +230,17 @@ macro_rules! define_matrix {
     };
 }
 
-define_matrix!(Mat2x2, 8, f32, Vec2, 2, 2, 0 -> 0, 1 <- "Matrix of f32s with 2 columns and 2 rows. Alignment 8, size 16.");
-define_matrix!(Mat2x3, 8, f32, Vec2, 2, 3, 8 -> 0, 1, 2 <- "Matrix of f32s with 2 columns and 3 rows. Alignment 8, size 32.");
-define_matrix!(Mat2x4, 8, f32, Vec2, 2, 4, 0 -> 0, 1, 2, 3 <- "Matrix of f32s with 2 columns and 4 rows. Alignment 8, size 32.");
+define_matrix!(Mat2x2, ColumnMatrix2, 8, f32, Vec2, 2, 2, 0 -> 0, 1 <- "Matrix of f32s with 2 columns and 2 rows. Alignment 8, size 16.");
+define_matrix!(Mat2x3, ColumnMatrix2x3, 8, f32, Vec2, 2, 3, 8 -> 0, 1, 2 <- "Matrix of f32s with 2 columns and 3 rows. Alignment 8, size 32.");
+define_matrix!(Mat2x4, ColumnMatrix2x4, 8, f32, Vec2, 2, 4, 0 -> 0, 1, 2, 3 <- "Matrix of f32s with 2 columns and 4 rows. Alignment 8, size 32.");
 
-define_matrix!(Mat3x2, 16, f32, Vec3, 3, 2, 4 -> 0, 1 <- "Matrix of f32s with 3 columns and 2 rows. Alignment 16, size 32.");
-define_matrix!(Mat3x3, 16, f32, Vec3, 3, 3, 4 -> 0, 1, 2 <- "Matrix of f32s with 3 columns and 3 rows. Alignment 16, size 48.");
-define_matrix!(Mat3x4, 16, f32, Vec3, 3, 4, 4 -> 0, 1, 2, 3 <- "Matrix of f32s with 3 columns and 4 rows. Alignment 16, size 64.");
+define_matrix!(Mat3x2, ColumnMatrix3x2, 16, f32, Vec3, 3, 2, 4 -> 0, 1 <- "Matrix of f32s with 3 columns and 2 rows. Alignment 16, size 32.");
+define_matrix!(Mat3x3, ColumnMatrix3, 16, f32, Vec3, 3, 3, 4 -> 0, 1, 2 <- "Matrix of f32s with 3 columns and 3 rows. Alignment 16, size 48.");
+define_matrix!(Mat3x4, ColumnMatrix3x4, 16, f32, Vec3, 3, 4, 4 -> 0, 1, 2, 3 <- "Matrix of f32s with 3 columns and 4 rows. Alignment 16, size 64.");
 
-define_matrix!(Mat4x2, 16, f32, Vec4, 4, 2, 0 -> 0, 1 <- "Matrix of f32s with 4 columns and 2 rows. Alignment 16, size 32.");
-define_matrix!(Mat4x3, 16, f32, Vec4, 4, 3, 0 -> 0, 1, 2 <- "Matrix of f32s with 4 columns and 3 rows. Alignment 16, size 48.");
-define_matrix!(Mat4x4, 16, f32, Vec4, 4, 4, 0 -> 0, 1, 2, 3 <- "Matrix of f32s with 4 columns and 4 rows. Alignment 16, size 64.");
+define_matrix!(Mat4x2, ColumnMatrix4x2, 16, f32, Vec4, 4, 2, 0 -> 0, 1 <- "Matrix of f32s with 4 columns and 2 rows. Alignment 16, size 32.");
+define_matrix!(Mat4x3, ColumnMatrix4x3, 16, f32, Vec4, 4, 3, 0 -> 0, 1, 2 <- "Matrix of f32s with 4 columns and 3 rows. Alignment 16, size 48.");
+define_matrix!(Mat4x4, ColumnMatrix4, 16, f32, Vec4, 4, 4, 0 -> 0, 1, 2, 3 <- "Matrix of f32s with 4 columns and 4 rows. Alignment 16, size 64.");
 
 /// Matrix of f32s with 2 columns and 2 rows. Alignment 8, size 16.
 pub type Mat2 = Mat2x2;
@@ -211,17 +249,17 @@ pub type Mat3 = Mat3x3;
 /// Matrix of f32s with 4 columns and 4 rows. Alignment 16, size 64.
 pub type Mat4 = Mat4x4;
 
-define_matrix!(DMat2x2, 16, f64, DVec2, 2, 2, 0 -> 0, 1 <- "Matrix of f64s with 2 columns and 2 rows. Alignment 16, size 32.");
-define_matrix!(DMat2x3, 16, f64, DVec2, 2, 3, 0 -> 0, 1, 2 <- "Matrix of f64s with 2 columns and 3 rows. Alignment 16, size 48.");
-define_matrix!(DMat2x4, 16, f64, DVec2, 2, 4, 0 -> 0, 1, 2, 3 <- "Matrix of f64s with 2 columns and 4 rows. Alignment 16, size 64.");
+define_matrix!(DMat2x2, ColumnMatrix2, 16, f64, DVec2, 2, 2, 0 -> 0, 1 <- "Matrix of f64s with 2 columns and 2 rows. Alignment 16, size 32.");
+define_matrix!(DMat2x3, ColumnMatrix2x3, 16, f64, DVec2, 2, 3, 0 -> 0, 1, 2 <- "Matrix of f64s with 2 columns and 3 rows. Alignment 16, size 48.");
+define_matrix!(DMat2x4, ColumnMatrix2x4, 16, f64, DVec2, 2, 4, 0 -> 0, 1, 2, 3 <- "Matrix of f64s with 2 columns and 4 rows. Alignment 16, size 64.");
 
-define_matrix!(DMat3x2, 32, f64, DVec3, 3, 2, 0 -> 0, 1 <- "Matrix of f64s with 3 columns and 2 rows. Alignment 32, size 64.");
-define_matrix!(DMat3x3, 32, f64, DVec3, 3, 3, 0 -> 0, 1, 2 <- "Matrix of f64s with 3 columns and 3 rows. Alignment 32, size 96.");
-define_matrix!(DMat3x4, 32, f64, DVec3, 3, 4, 0 -> 0, 1, 2, 3 <- "Matrix of f64s with 3 columns and 4 rows. Alignment 32, size 128.");
+define_matrix!(DMat3x2, ColumnMatrix3x2, 32, f64, DVec3, 3, 2, 0 -> 0, 1 <- "Matrix of f64s with 3 columns and 2 rows. Alignment 32, size 64.");
+define_matrix!(DMat3x3, ColumnMatrix3, 32, f64, DVec3, 3, 3, 0 -> 0, 1, 2 <- "Matrix of f64s with 3 columns and 3 rows. Alignment 32, size 96.");
+define_matrix!(DMat3x4, ColumnMatrix3x4, 32, f64, DVec3, 3, 4, 0 -> 0, 1, 2, 3 <- "Matrix of f64s with 3 columns and 4 rows. Alignment 32, size 128.");
 
-define_matrix!(DMat4x2, 32, f64, DVec4, 4, 2, 0 -> 0, 1 <- "Matrix of f64s with 4 columns and 2 rows. Alignment 32, size 64.");
-define_matrix!(DMat4x3, 32, f64, DVec4, 4, 3, 0 -> 0, 1, 2 <- "Matrix of f64s with 4 columns and 3 rows. Alignment 32, size 96.");
-define_matrix!(DMat4x4, 32, f64, DVec4, 4, 4, 0 -> 0, 1, 2, 3 <- "Matrix of f64s with 4 columns and 4 rows. Alignment 32, size 128.");
+define_matrix!(DMat4x2, ColumnMatrix4x2, 32, f64, DVec4, 4, 2, 0 -> 0, 1 <- "Matrix of f64s with 4 columns and 2 rows. Alignment 32, size 64.");
+define_matrix!(DMat4x3, ColumnMatrix4x3, 32, f64, DVec4, 4, 3, 0 -> 0, 1, 2 <- "Matrix of f64s with 4 columns and 3 rows. Alignment 32, size 96.");
+define_matrix!(DMat4x4, ColumnMatrix4, 32, f64, DVec4, 4, 4, 0 -> 0, 1, 2, 3 <- "Matrix of f64s with 4 columns and 4 rows. Alignment 32, size 128.");
 
 /// Matrix of f64s with 2 columns and 3 rows. Alignment 16, size 48.
 pub type DMat2 = DMat2x2;
