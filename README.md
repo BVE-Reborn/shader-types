@@ -63,4 +63,7 @@ let block = UniformBlock {
 unsafe impl bytemuck::Zeroable for UniformBlock {}
 unsafe impl bytemuck::Pod for UniformBlock {}
 
-let block_u8: &[u8] = bytemuck::cast_s
+let block_u8: &[u8] = bytemuck::cast_slice(&[block]);
+```
+
+License: MIT OR Apache-2.0 OR Zlib
