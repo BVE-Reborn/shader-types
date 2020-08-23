@@ -1,5 +1,9 @@
 # shader-types
 
+![GitHub Workflow Status](https://img.shields.io/github/workflow/status/BVE-Reborn/shader-types/CI)
+[![Crates.io](https://img.shields.io/crates/v/shader-types)](https://crates.io/crates/shader-types)
+[![Documentation](https://docs.rs/shader-types/badge.svg)](https://docs.rs/shader-types)
+
 Vector and Matrix types that are properly aligned for use in std140 uniforms.
 
 All the types in this library have the same alignment and size as the equivilant glsl type in the
