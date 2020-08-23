@@ -20,7 +20,7 @@
 //!     vec3 position;
 //!     vec3 normal;
 //!     vec2 uv;
-//! }
+//! };
 //! ```
 //!
 //! This struct is rife with padding. However it's now easy to mind the padding:
@@ -37,7 +37,6 @@
 //!     position: Vec3, // 16 align + 12 size
 //!     normal: Vec3, // 16 align + 12 size
 //!     uv: Vec2, // 8 align + 8 size
-//!     _padding: Pad2Float, // Struct is 16 byte aligned, so we need (the space of) 2 more floats.
 //! }
 //!
 //! fn generate_mvp() -> [f32; 16] {
@@ -52,7 +51,6 @@
 //!     position: Vec3::new([0.0, 1.0, 2.0]), // `from` also works
 //!     normal: Vec3::new([-2.0, 2.0, 3.0]),
 //!     uv: Vec2::new([0.0, 1.0]),
-//!     _padding: Pad2Float::new(), // `default` also works
 //! };
 //!
 //! // Supports bytemuck with the `bytemuck` feature

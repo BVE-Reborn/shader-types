@@ -3,6 +3,7 @@
 ![GitHub Workflow Status](https://img.shields.io/github/workflow/status/BVE-Reborn/shader-types/CI)
 [![Crates.io](https://img.shields.io/crates/v/shader-types)](https://crates.io/crates/shader-types)
 [![Documentation](https://docs.rs/shader-types/badge.svg)](https://docs.rs/shader-types)
+![License](https://img.shields.io/crates/l/shader-types)
 
 Vector and Matrix types that are properly aligned for use in std140 uniforms.
 
@@ -26,7 +27,7 @@ layout(set = 0, binding = 0) uniform Block {
     vec3 position;
     vec3 normal;
     vec2 uv;
-}
+};
 ```
 
 This struct is rife with padding. However it's now easy to mind the padding:
@@ -36,7 +37,7 @@ use shader_types::{Vec2, Vec3, Mat4};
 use shader_types::padding::Pad2Float;
 
 // Definition
-#[repr(C, align(16))] // All structures are Align(16)
+#[repr(C)]
 #[derive(Copy, Clone)]
 struct UniformBlock {
     mvp: Mat4, // 16 align + 64 size
@@ -62,7 +63,4 @@ let block = UniformBlock {
 unsafe impl bytemuck::Zeroable for UniformBlock {}
 unsafe impl bytemuck::Pod for UniformBlock {}
 
-let block_u8: &[u8] = bytemuck::cast_slice(&[block]);
-```
-
-License: MIT OR Apache-2.0 OR Zlib
+let block_u8: &[u8] = bytemuck::cast_s

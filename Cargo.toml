@@ -1,7 +1,10 @@
 [package]
 name = "shader-types"
 version = "0.2.0"
-authors = ["Connor Fitzgerald <connorwadefitzgerald@gmail.com>"]
+authors = [
+    "Connor Fitzgerald <connorwadefitzgerald@gmail.com>",
+    "Lucien Greathouse <me@lpghatguy.com>",
+]
 edition = "2018"
 description = "Vector and Matrix types that are properly aligned for use in std140 uniforms"
 readme = "README.md"
