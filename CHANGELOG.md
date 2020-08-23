@@ -35,5 +35,5 @@ Released 2020-07-12
 
 ## Diffs
 
-- [Unreleased](https://github.com/BVE-Reborn/crate-name/compare/v0.2.0...HEAD)
-- [v0.2.0](https://github.com/BVE-Reborn/crate-name/compare/v0.1.0...v0.2.0)
+- [Unreleased](https://github.com/BVE-Reborn/shader-types/compare/v0.2.0...HEAD)
+- [v0.2.0](https://github.com/BVE-Reborn/shader-types/compare/v0.1.0...v0.2.0)
