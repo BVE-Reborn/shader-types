@@ -6,11 +6,16 @@ The format is loosely based on [Keep a Changelog](https://keepachangelog.com/en/
 and this project adheres to cargo's version of [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - [Unreleased](#unreleased)
+- [v0.2.1](#v021)
 - [v0.2.0](#v020)
 - [v0.1.0](#v010)
 - [Diffs](#diffs)
 
 ## Unreleased
+
+## v0.2.1
+
+Release 2020-08-23
 
 #### Added
 - `From<mint::*>` impls for all types.
@@ -36,5 +41,6 @@ Released 2020-07-12
 
 ## Diffs
 
-- [Unreleased](https://github.com/BVE-Reborn/shader-types/compare/v0.2.0...HEAD)
+- [Unreleased](https://github.com/BVE-Reborn/shader-types/compare/v0.2.1...HEAD)
+- [v0.2.1](https://github.com/BVE-Reborn/shader-types/compare/v0.2.0...v0.2.1)
 - [v0.2.0](https://github.com/BVE-Reborn/shader-types/compare/v0.1.0...v0.2.0)
