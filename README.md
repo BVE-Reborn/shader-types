@@ -68,4 +68,8 @@ unsafe impl bytemuck::Pod for UniformBlock {}
 let block_u8: &[u8] = bytemuck::cast_slice(&[block]);
 ```
 
+## MSRV
+
+Rust 1.34
+
 License: MIT OR Apache-2.0 OR Zlib

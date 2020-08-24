@@ -61,6 +61,10 @@
 //!
 //! let block_u8: &[u8] = bytemuck::cast_slice(&[block]);
 //! ```
+//!
+//! # MSRV
+//!
+//! Rust 1.34
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
