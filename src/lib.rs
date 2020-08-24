@@ -20,14 +20,14 @@
 //!     vec3 position;
 //!     vec3 normal;
 //!     vec2 uv;
+//!     int constants[3];
 //! };
 //! ```
 //!
 //! This struct is rife with padding. However it's now easy to mind the padding:
 //!
 //! ```rust
-//! use shader_types::{Vec2, Vec3, Mat4};
-//! use shader_types::padding::Pad2Float;
+//! use shader_types::{Vec2, Vec3, Mat4, ArrayMember};
 //!
 //! // Definition
 //! #[repr(C)]
@@ -37,6 +37,7 @@
 //!     position: Vec3, // 16 align + 12 size
 //!     normal: Vec3, // 16 align + 12 size
 //!     uv: Vec2, // 8 align + 8 size
+//!     constants: [ArrayMember<i32>; 3] // 3x 16 align + 4 size
 //! }
 //!
 //! fn generate_mvp() -> [f32; 16] {
@@ -51,6 +52,7 @@
 //!     position: Vec3::new([0.0, 1.0, 2.0]), // `from` also works
 //!     normal: Vec3::new([-2.0, 2.0, 3.0]),
 //!     uv: Vec2::new([0.0, 1.0]),
+//!     constants: [ArrayMember(0), ArrayMember(1), ArrayMember(2)]
 //! };
 //!
 //! // Supports bytemuck with the `bytemuck` feature
@@ -281,6 +283,107 @@ pub type DMat2 = DMat2x2;
 pub type DMat3 = DMat3x3;
 /// Matrix of f64s with 4 columns and 4 rows. Alignment 32, size 128.
 pub type DMat4 = DMat4x4;
+
+/// Pads an element to be in an array in a shader.
+///
+/// All elements in arrays need to be aligned to 16 bytes. This automatically aligns your types to 16 bytes.
+///
+/// This glsl:
+///
+/// ```glsl
+/// struct FloatArray {
+///     float array[45];
+/// };
+/// ```
+///
+/// turns into:
+///
+/// ```rust
+/// #[repr(C)]
+/// struct FloatArray {
+///     array: [shader_types::ArrayMember<f32>; 45]
+/// }
+/// ```
+#[repr(C, align(16))]
+#[derive(Debug, Copy, Clone, Default, PartialEq, PartialOrd, Eq, Ord, Hash)]
+pub struct ArrayMember<T>(pub T);
+
+#[cfg(feature = "bytemuck")]
+unsafe impl<T: bytemuck::Zeroable> bytemuck::Zeroable for ArrayMember<T> {}
+#[cfg(feature = "bytemuck")]
+unsafe impl<T: bytemuck::Pod> bytemuck::Pod for ArrayMember<T> {}
+
+/// Pads a structure for use with dynamic offsets in graphics apis.
+///
+/// All dynamic offsets need to be aligned to 256 bytes. This automatically aligns your types to 256s.
+///
+/// Given a shader of:
+///
+/// ```glsl
+/// uniform Uniforms {
+///     mat4 mvp;
+///     mat4 mv;
+/// };
+/// ```
+///
+/// An array of rust structs can be made and used:
+///
+/// ```rust
+/// use shader_types::{Mat4, DynamicOffsetMember};
+/// # use std::mem::size_of;
+///
+/// // Implementations don't matter
+/// fn generate_mvp(_: usize) -> [f32; 16] {
+///     // ...
+/// #     unsafe { std::mem::zeroed() }
+/// }
+/// fn generate_mv(_: usize) -> [f32; 16] {
+///     // ...
+/// #     unsafe { std::mem::zeroed() }
+/// }
+/// fn set_uniform_buffer(_: &[DynamicOffsetMember<Uniforms>]) {
+///     // ...
+/// }
+/// fn bind_uniform_with_offset(_: usize) {
+///     // ...
+/// }
+/// fn render_object(_: usize) {
+///     // ...
+/// }
+///
+/// #[repr(C)]
+/// struct Uniforms {
+///     mvp: Mat4,
+///     mv: Mat4,
+/// }
+///
+/// // Generate buffer
+/// let mut vec: Vec<DynamicOffsetMember<Uniforms>> = Vec::new();
+/// for obj_idx in 0..10 {
+///     vec.push(DynamicOffsetMember(Uniforms {
+///         mvp: Mat4::from(generate_mvp(obj_idx)),
+///         mv: Mat4::from(generate_mv(obj_idx)),
+///     }))
+/// }
+///
+/// // Use Buffer
+/// set_uniform_buffer(&vec);
+/// for obj_idx in 0..10 {
+///     let offset = obj_idx * size_of::<DynamicOffsetMember<Uniforms>>();
+///     // Offset must be aligned by 256
+///     assert_eq!(offset % 256, 0);
+///     bind_uniform_with_offset(offset);
+///     render_object(obj_idx);
+/// }
+/// ```
+#[repr(C, align(256))]
+#[derive(Debug, Copy, Clone, Default, PartialEq, PartialOrd, Eq, Ord, Hash)]
+pub struct DynamicOffsetMember<T>(pub T);
+
+#[cfg(feature = "bytemuck")]
+unsafe impl<T: bytemuck::Zeroable> bytemuck::Zeroable for DynamicOffsetMember<T> {}
+#[cfg(feature = "bytemuck")]
+unsafe impl<T: bytemuck::Pod> bytemuck::Pod for DynamicOffsetMember<T> {}
 
 /// Correctly sized padding helpers.
 pub mod padding {

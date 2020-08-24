@@ -27,14 +27,14 @@ layout(set = 0, binding = 0) uniform Block {
     vec3 position;
     vec3 normal;
     vec2 uv;
+    int constants[3];
 };
 ```
 
 This struct is rife with padding. However it's now easy to mind the padding:
 
 ```rust
-use shader_types::{Vec2, Vec3, Mat4};
-use shader_types::padding::Pad2Float;
+use shader_types::{Vec2, Vec3, Mat4, ArrayMember};
 
 // Definition
 #[repr(C)]
@@ -44,6 +44,7 @@ struct UniformBlock {
     position: Vec3, // 16 align + 12 size
     normal: Vec3, // 16 align + 12 size
     uv: Vec2, // 8 align + 8 size
+    constants: [ArrayMember<i32>; 3] // 3x 16 align + 4 size
 }
 
 fn generate_mvp() -> [f32; 16] {
@@ -57,6 +58,7 @@ let block = UniformBlock {
     position: Vec3::new([0.0, 1.0, 2.0]), // `from` also works
     normal: Vec3::new([-2.0, 2.0, 3.0]),
     uv: Vec2::new([0.0, 1.0]),
+    constants: [ArrayMember(0), ArrayMember(1), ArrayMember(2)]
 };
 
 // Supports bytemuck with the `bytemuck` feature
