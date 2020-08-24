@@ -18,6 +18,7 @@ and this project adheres to cargo's version of [Semantic Versioning](https://sem
 Release 2020-08-23
 
 #### Added
+- Support for the `mint` crate.
 - `From<mint::*>` impls for all types.
 - `From<shader_types::*>` impls for mint types.
 - `from_mint` functions for easy conversion from anything that is convertable to a mint type.
