@@ -13,6 +13,10 @@ license = "MIT OR Apache-2.0 OR Zlib"
 keywords = ["gamedev", "shaders", "graphics", "alignment", "std140"]
 categories = ["graphics", "game-development"]
 
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
+
 [features]
 default = ["std"]
 std = []
