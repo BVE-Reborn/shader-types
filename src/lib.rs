@@ -10,6 +10,11 @@
 //! to/from both 1d and 2d arrays as well as an array of the underlying _vector_ type. (eg. [`Mat2`] can be
 //! constructed from `[Vec2; 2]`)
 //!
+//! # Features
+//!
+//! - `bytemuck` all types implement `Zeroable` and `Pod`.
+//! - `mint` enable conversions to/from equivalent mint types.
+//!
 //! # Example
 //!
 //! For the following glsl:
@@ -67,6 +72,7 @@
 //! Rust 1.34
 
 #![cfg_attr(not(feature = "std"), no_std)]
+#![cfg_attr(docsrs, feature(doc_cfg))]
 
 macro_rules! define_vectors {
     ( $(( $name:ident, $mint_name:ident, $prim:ident * $count:literal, align: $align:literal, size: $size:literal ),)* ) => {
@@ -111,6 +117,7 @@ macro_rules! define_vectors {
             }
 
             #[cfg(feature = "mint")]
+            #[cfg_attr(docsrs, doc(cfg(feature = "mint")))]
             #[doc = $mint_doc]
             #[inline(always)]
             pub fn from_mint<T: Into<$mint_type>>(value: T) -> Self {
@@ -216,6 +223,7 @@ macro_rules! define_matrices {
             }
 
             #[cfg(feature = "mint")]
+            #[cfg_attr(docsrs, doc(cfg(feature = "mint")))]
             #[doc = $mint_doc]
             #[inline(always)]
             pub fn from_mint<T: Into<$mint_type>>(value: T) -> Self {

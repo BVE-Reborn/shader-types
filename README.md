@@ -17,6 +17,11 @@ Vectors are constructable to/from an array of their underlying type. Matrices ar
 to/from both 1d and 2d arrays as well as an array of the underlying _vector_ type. (eg. [`Mat2`](https://docs.rs/shader-types/*/shader_types/type.Mat2.html) can be
 constructed from `[Vec2; 2]`)
 
+## Features
+
+- `bytemuck` all types implement `Zeroable` and `Pod`.
+- `mint` enable conversions to/from equivalent mint types.
+
 ## Example
 
 For the following glsl:
