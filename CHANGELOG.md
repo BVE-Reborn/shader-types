@@ -15,7 +15,7 @@ and this project adheres to cargo's version of [Semantic Versioning](https://sem
 
 ## v0.2.2
 
-Released 2020-0830
+Released 2020-08-30
 
 #### Deprecated
 - Deprecated entire crate in favor of [glsl-layout](https://docs.rs/glsl-layout).
