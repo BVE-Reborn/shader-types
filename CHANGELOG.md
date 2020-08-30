@@ -13,9 +13,16 @@ and this project adheres to cargo's version of [Semantic Versioning](https://sem
 
 ## Unreleased
 
+## v0.2.2
+
+Released 2020-0830
+
+#### Deprecated
+- Deprecated entire crate in favor of [glsl-layout](https://docs.rs/glsl-layout).
+
 ## v0.2.1
 
-Release 2020-08-23
+Released 2020-08-23
 
 #### Added
 - Support for the `mint` crate.
@@ -42,6 +49,7 @@ Released 2020-07-12
 
 ## Diffs
 
-- [Unreleased](https://github.com/BVE-Reborn/shader-types/compare/v0.2.1...HEAD)
+- [Unreleased](https://github.com/BVE-Reborn/shader-types/compare/v0.2.2...HEAD)
+- [v0.2.2](https://github.com/BVE-Reborn/shader-types/compare/v0.2.1...v0.2.2)
 - [v0.2.1](https://github.com/BVE-Reborn/shader-types/compare/v0.2.0...v0.2.1)
 - [v0.2.0](https://github.com/BVE-Reborn/shader-types/compare/v0.1.0...v0.2.0)

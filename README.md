@@ -5,6 +5,15 @@
 [![Documentation](https://docs.rs/shader-types/badge.svg)](https://docs.rs/shader-types)
 ![License](https://img.shields.io/crates/l/shader-types)
 
+## DO NOT USE THIS CRATE
+
+There are fundamental flaws with this method of defining padding. This crate is kept live
+and not yanked for backwards compat only. For a crate that serves this exact purpose, look
+at the wonderful [`glsl-layout`](https://docs.rs/glsl-layout/) which doesn't suffer from
+the same problems.
+
+## Old Readme:
+
 Vector and Matrix types that are properly aligned for use in std140 uniforms.
 
 All the types in this library have the same alignment and size as the equivilant glsl type in the
