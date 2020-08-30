@@ -27,3 +27,6 @@ mint = { version = "0.5.5", optional = true }
 
 [dev-dependencies]
 bytemuck = { version = "1" }
+glsl-layout = "0.3"
+static_assertions = "1"
+std140 = "0.2"

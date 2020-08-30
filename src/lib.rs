@@ -74,15 +74,52 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
+/// A single signed integer. Has size 4 and alignment 4.
+pub type Int = i32;
+/// A single unsigned integer. Has size 4 and alignment 4.
+pub type Uint = u32;
+/// A single single-precision floating point number. Has size 4 and alignment 4.
+pub type Float = f32;
+/// A single double-precision floating point number. Has size 8 and alignment 8.
+pub type Double = f64;
+
+/// A boolean value. Has size 4 and alignment 4.
+#[repr(transparent)]
+#[derive(Debug, Copy, Clone, Default, PartialEq, PartialOrd)]
+pub struct Bool(u32);
+
+impl Bool {
+    pub fn new(value: bool) -> Self {
+        Self(value as u32)
+    }
+}
+
+impl From<Bool> for bool {
+    fn from(other: Bool) -> Self {
+        other.0 != 0
+    }
+}
+
+impl From<bool> for Bool {
+    fn from(other: bool) -> Self {
+        Self(other as u32)
+    }
+}
+
+#[cfg(feature = "bytemuck")]
+unsafe impl bytemuck::Zeroable for Bool {}
+#[cfg(feature = "bytemuck")]
+unsafe impl bytemuck::Pod for Bool {}
+
 macro_rules! define_vectors {
     ( $(( $name:ident, $mint_name:ident, $prim:ident * $count:literal, align: $align:literal, size: $size:literal ),)* ) => {
         $(
             define_vectors!(@impl
                 $name,
                 mint::$mint_name<$prim>,
-                $align,
                 $prim,
                 $count,
+                $align,
                 concat!(
                     "Vector of ", stringify!($count), " `", stringify!($prim), "` values. ",
                     "Has size ", stringify!($size), " and alignment ", stringify!($align), "."
@@ -95,7 +132,7 @@ macro_rules! define_vectors {
         )*
     };
 
-    (@impl $name:ident, $mint_type:ty, $align:literal, $ty:ty, $count:literal, $doc:expr, $mint_doc:expr) => {
+    (@impl $name:ident, $mint_type:ty, $ty:ty, $count:literal, $align:literal, $doc:expr, $mint_doc:expr) => {
         #[doc = $doc]
         #[repr(C, align($align))]
         #[derive(Debug, Copy, Clone, Default, PartialEq, PartialOrd)]
@@ -163,18 +200,21 @@ macro_rules! define_vectors {
 }
 
 define_vectors! {
-    (Vec2, Vector2, f32 * 2, align: 8, size: 16),
-    (Vec3, Vector3, f32 * 3, align: 16, size: 24),
-    (Vec4, Vector4, f32 * 4, align: 16, size: 32),
-    (DVec2, Vector2, f64 * 2, align: 16, size: 32),
-    (DVec3, Vector3, f64 * 3, align: 32, size: 48),
-    (DVec4, Vector4, f64 * 4, align: 32, size: 64),
-    (UVec2, Vector2, u32 * 2, align: 8, size: 16),
-    (UVec3, Vector3, u32 * 3, align: 16, size: 24),
-    (UVec4, Vector4, u32 * 4, align: 16, size: 32),
-    (IVec2, Vector2, i32 * 2, align: 8, size: 16),
-    (IVec3, Vector3, i32 * 3, align: 16, size: 24),
-    (IVec4, Vector4, i32 * 4, align: 16, size: 32),
+    (Vec2, Vector2, f32 * 2, align: 8, size: 8),
+    (Vec3, Vector3, f32 * 3, align: 16, size: 12),
+    (Vec4, Vector4, f32 * 4, align: 16, size: 16),
+    (DVec2, Vector2, f64 * 2, align: 16, size: 16),
+    (DVec3, Vector3, f64 * 3, align: 32, size: 24),
+    (DVec4, Vector4, f64 * 4, align: 32, size: 32),
+    (UVec2, Vector2, u32 * 2, align: 8, size: 8),
+    (UVec3, Vector3, u32 * 3, align: 16, size: 12),
+    (UVec4, Vector4, u32 * 4, align: 16, size: 16),
+    (IVec2, Vector2, i32 * 2, align: 8, size: 8),
+    (IVec3, Vector3, i32 * 3, align: 16, size: 12),
+    (IVec4, Vector4, i32 * 4, align: 16, size: 16),
+    (BVec2, Vector2, Bool * 2, align: 8, size: 8),
+    (BVec3, Vector3, Bool * 3, align: 16, size: 12),
+    (BVec4, Vector4, Bool * 4, align: 16, size: 16),
 }
 
 macro_rules! define_matrices {
@@ -475,4 +515,38 @@ pub mod padding {
     define_padding!(Pad2Double, 16 <- "Padding the size of two doubles. 16 bytes.");
     define_padding!(Pad3Double, 24 <- "Padding the size of three doubles. 24 bytes.");
     define_padding!(Pad4Double, 32 <- "Padding the size of four doubles. 32 bytes.");
+}
+
+#[cfg(test)]
+mod test {
+    use crate::*;
+    use core::mem::size_of;
+    use glsl_layout::AsStd140;
+    use std::ptr::null;
+
+    #[repr(C)]
+    struct Test1 {
+        a: Vec3,
+        b: u32,
+    }
+
+    #[repr(C)]
+    struct Test2 {
+        a: std140::vec3,
+        b: std140::uint,
+    }
+
+    #[derive(AsStd140)]
+    struct Test3 {
+        a: glsl_layout::vec3,
+        b: glsl_layout::int,
+    }
+
+    type Test3U = <Test3 as AsStd140>::Std140;
+
+    #[test]
+    fn sizes() {
+        assert_eq!((&unsafe { &*null::<Test3U>() }.b) as *const i32 as usize, 12);
+        assert_eq!(size_of::<Test3U>(), 16);
+    }
 }
